@@ -1,0 +1,16 @@
+.env
+*.env
+__pycache__/
+*.pyc
+.git/
+.vscode/
+.idea/
+
+# Docker data
+postgres-data/
+zabbix-data/
+
+# Secrets
+secrets/
+*.pem
+*.key

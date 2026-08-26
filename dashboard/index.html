@@ -1,0 +1,4345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+    <title>SOC Security Dashboard</title>
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com">
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --olive-green: #6B7A3E; --sage-green: #A3A88B; --olive-mist: #C7CCB2;
+            --warm-beige: #DCC2B8; --soft-cream: #EDE6D6; --deep-olive: #4A5320;
+            --white-soft: #F8F5ED; --panel: #F4EFE4; --border: rgba(74, 83, 32, 0.12);
+            --text-main: #2E3420; --text-muted: #7B806B; --critical: #8A3E35;
+            --critical-bg: #F0D6D0; --high: #A66B35; --high-bg: #F1E0C8;
+            --success: #5E6F36; --shadow: 0 18px 45px rgba(74, 83, 32, 0.08);}
+        * {box-sizing: border-box; margin: 0; padding: 0;}
+        html {scroll-behavior: smooth;}
+        body {
+            font-family: "DM Sans", sans-serif; background:linear-gradient(135deg, #EDE6D6 0%, #F7F3EA 45%, #E6E1D4 100%);
+            color:var(--text-main); min-height:100vh; overflow-x:hidden;}
+        button {font: inherit;}
+/* PAGE NAVIGATION */
+        .dashboard-page {display: none; animation:pageFade 0.35s ease;}
+        .dashboard-page.active-page {display: block;}
+        @keyframes pageFade {
+            from {opacity: 0;transform: translateY(8px);}
+            to {opacity: 1;transform: translateY(0);}}
+/* APP LAYOUT*/
+        .app-layout {display: flex;min-height:100vh;}
+/* SIDEBAR*/
+        .sidebar {
+            width:250px; min-height:100vh; padding:28px 18px;
+            background:rgba(248, 245, 237, 0.82);
+            border-right: 1px solid var(--border);
+            backdrop-filter: blur(16px);
+            position: fixed; left: 0; top: 0; z-index: 100;}
+        .brand {display:flex; align-items:center; gap: 12px; padding: 12px 10px 34px;}
+        .brand-mark {width:42px; height:42px; border-radius: 14px; display:flex;
+            align-items: center; justify-content:center; background: var(--deep-olive);
+            color: var(--soft-cream); font-size:20px; box-shadow: 0 10px 22px
+                rgba(74,83,32,0.18);}
+        .brand-text h2 {font-family:"Playfair Display",serif; font-size: 20px; font-weight:500;}
+        .brand-text span {display:block; margin-top:2px; font-size:10px;
+            text-transform:uppercase; letter-spacing:2px; color:var(--text-muted);}
+        .nav-label { font-size: 10px; font-weight:700; text-transform:uppercase;
+            letter-spacing: 2px; color: var(--text-muted); padding:0 12px 12px;}
+        .nav-menu { display: flex; flex-direction: column; gap: 7px;}
+        .nav-item { width: 100%; border: none; background: transparent; padding: 13px 14px;
+            border-radius: 14px; display:flex; align-items: center; gap: 13px; cursor: pointer;
+            color: var(--text-muted); transition: 0.25s ease;}
+        .nav-item:hover {
+            background:rgba( 199,204, 178, 0.38); color:var(--deep-olive);}
+        .nav-item.active { background: var(--deep-olive); color: var(--soft-cream);
+            box-shadow: 0 10px 24px rgba(74, 83, 32, 0.15);}
+        .nav-icon { width: 20px; text-align: center; font-size:16px;}
+        .nav-text {font-size: 14px; font-weight:500;}
+        .sidebar-bottom {position: absolute; left: 18px; right: 18px; bottom:26px;}
+        .system-status {padding: 16px; border-radius:18px;
+            background: linear-gradient(145deg, var(--deep-olive), #59632B); color:var(--soft-cream);}
+        .status-small {font-size: 10px; text-transform: uppercase; letter-spacing: 1.8px; opacity: 0.7;}
+        .status-main { margin-top: 8px; display: flex; align-items:center; gap:8px;  font-size:14px; 
+            font-weight:600;}
+        .status-dot {width: 8px; height: 8px; border-radius: 50%; background: #C7CCB2;}
+/* MAIN CONTENT*/
+        .main-content { width: 100%; margin-left: 250px; padding: 32px 40px 45px; max-width: 1800px;}
+/* HEADER*/
+        .top-header {display:flex; align-items:flex-start; justify-content:space-between; gap:30px; margin-bottom:36px;}
+        .eyebrow {display:flex; align-items:center; gap:8px; margin-bottom:10px;font-size:10px;
+            font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--olive-green);}
+        .eyebrow-line {width:22px; height:1px; background:var(--olive-green);}
+        .page-title {font-family:"Playfair Display",serif;font-size:clamp(38px,5vw,64px);
+            font-weight:400; line-height:0.95; letter-spacing:-2px;}
+        .page-title span {display:block; color:var(--olive-green);}
+        .page-subtitle {margin-top:15px; max-width:580px; font-size:14px; line-height:1.7; color:var(--text-muted);}
+        .header-right {display:flex; align-items:center; gap:12px;}
+        .header-date {text-align:right; padding-top:4px;}
+        .date-small {font-size:10px; text-transform:uppercase; letter-spacing:1.6px; color:var(--text-muted);}
+        .date-main {margin-top:5px; font-size:13px; font-weight:600; color:var(--deep-olive);}
+        .live-indicator {display:flex; align-items:center; gap: 8px; padding:11px 14px; border-radius:30px; 
+            background: rgba(163,168,139,0.26);border:1px solid rgba(74,83,32,0.08);
+            font-size: 12px; color:var(--deep-olive); font-weight:600;}
+        .live-dot {width: 8px; height:8px; border-radius:50%; background: var(--olive-green); 
+            animation:pulse 2s infinite;}
+        @keyframes pulse {0% {box-shadow:0 0 0 0 rgba(107,122,62,0.45);}
+            70% {box-shadow:0 0 0 9px rgba(107,122,62,0);}
+            100% {box-shadow:0 0 0 0 rgba(107,122,62,0);}}
+/* HERO*/
+        .hero-grid {display: grid; grid-template-columns: 1.25fr 0.75fr; gap:24px; margin-bottom:24px;}
+        .security-hero {min-height: 270px; padding: 32px; border-radius:28px; 
+            background:linear-gradient(135deg, var(--deep-olive), #68733A);
+            color: var(--soft-cream); position:relative; overflow:hidden; box-shadow: var(--shadow);}
+        .hero-content {position:relative; z-index:2;}
+        .hero-label {font-size:10px; text-transform:uppercase; letter-spacing:2px; opacity:0.7;}
+        .hero-number {margin-top: 25px; font-family:"Playfair Display",serif;  font-size:52px;
+            font-weight:400; line-height:1;}
+        .hero-title {margin-top:12px; font-size:16px; font-weight:600;}
+        .hero-description {margin-top:8px; max-width:470px; font-size:13px; line-height:1.7;
+            color: rgba(237, 230, 214, 0.72);}
+        .hero-bottom {position:absolute; left:32px; right:32px; bottom:26px; display:flex;
+            justify-content:space-between; font-size:11px;}
+        .focus-card {padding:26px; border-radius:28px; background:rgba(248, 245, 237, 0.88);
+            border:1px solid var(--border); box-shadow: var(--shadow);}
+        .section-kicker {display: flex; justify-content:space-between; gap: 15px; margin-bottom: 24px;}
+        .section-kicker h3 {font-family:"Playfair Display",serif; font-size:24px; font-weight:500;}
+        .critical-pill {padding:7px 11px; border-radius: 30px; background: var(--critical-bg);
+            color: var(--critical); font-size:10px; font-weight: 700; text-transform: uppercase;}
+        .focus-incident-id {font-size:11px; color: var(--text-muted);}
+        .focus-incident-title {margin-top:8px; font-size:19px; color: var(--deep-olive);}
+        .focus-meta {margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+        .meta-box {padding:12px; border-radius:13px; background:rgba(199,204,178,0.2);}
+        .meta-box span {display:block;font-size:9px; text-transform:uppercase; color:var(--text-muted);}
+        .meta-box strong {display:block;margin-top:6px;font-size:13px;}
+/*STATISTICS*/
+        .stats-grid {display:grid;grid-template-columns:repeat(5, 1fr);gap:18px;margin-bottom:28px;}
+        .stat-card {padding:20px;border-radius:20px;background: rgba(248,245,237,0.82);
+            border:1px solid var(--border);}
+        .stat-card-top {display:flex;align-items:center;justify-content:space-between;}
+        .stat-label {font-size:10px;font-weight:700;text-transform:uppercase; color:var(--text-muted);}
+        .stat-icon {width:34px; height:34px; border-radius:50%; display:flex; align-items:center;
+            justify-content: center; background: rgba(163,168,139,0.25);}
+        .stat-value {margin-top:18px;font-family:"Playfair Display",serif;font-size:34px;}
+        .stat-footer {margin-top:10px; font-size:11px; color:var(--text-muted);}
+        .stat-card.critical .stat-icon {background:var(--critical-bg);}
+        .stat-card.high .stat-icon {background:var(--high-bg);}
+/* PANELS*/
+        .content-grid {display:grid; grid-template-columns:1.3fr 0.7fr; gap:24px; margin-bottom:24px;}
+        .panel {border-radius:24px; background: rgba(248, 245, 237, 0.82); border:1px solid var(--border);
+            overflow:hidden; margin-bottom:24px;}
+        .panel-header {padding:23px 25px 18px; display:flex; justify-content:space-between; gap:20px;}
+        .panel-title {font-family:"Playfair Display", serif; font-size:25px; font-weight:500;}
+        .panel-subtitle {margin-top:5px; font-size:11px; color: var(--text-muted);}
+        .small-action {border:none; background:rgba(163, 168, 139, 0.22); color:var(--deep-olive);
+            padding: 9px 13px; border-radius:20px; cursor:pointer; font-size:11px; font-weight:600;}
+/* EVENTS*/
+        .table-wrap {width:100%; overflow-x:auto;}
+        table {width:100%; border-collapse:collapse; min-width:620px;}
+        th {text-align:left; padding:13px 25px; font-size:9px; text-transform:uppercase;
+            color:var(--text-muted); border-bottom:1px solid var(--border);}
+        td {padding:17px 25px; font-size:12px; border-bottom:1px solid rgba(74,83,32,0.06);}
+        .event-type {display:inline-flex; align-items:center; gap:8px; font-weight: 600; color:var(--deep-olive);}
+        .event-dot {width:7px; height:7px; border-radius:50%; background:var(--olive-green);}
+        .event-type.failed .event-dot {background:var(--high);}
+        .event-type.success .event-dot {background:var(--success);}
+        .event-type.escalation .event-dot {background:var(--critical);}
+        .event-type.sensitive .event-dot {background:var(--deep-olive);}
+        .muted-cell {color:var(--text-muted);}
+/* ATTACK CHAIN*/
+        .attack-chain {padding:0 24px 24px;}
+        .attack-stage {display:grid; grid-template-columns:38px 1fr; gap:15px; position:relative;
+            padding-bottom:20px;}
+        .stage-number {width:38px; height:38px; border-radius:50%; display:flex; align-items:center;
+            justify-content:center; background:var(--olive-mist); color:var(--deep-olive);
+            font-size:12px; font-weight:700;}
+        .stage-content h4 {font-size:13px;}
+        .stage-content p {margin-top:4px; font-size:10px; color:var(--text-muted);}
+        .stage-mitre {display:inline-block; margin-top:7px; padding:4px 7px; border-radius:7px;
+            background: rgba(163, 168, 139, 0.22); color:var(--olive-green); font-size:9px; font-weight:700;}
+/* INCIDENTS*/
+        .incident-list {padding:0 24px 24px;}
+        .incident-item {padding:20px; border-radius:18px; background: rgba( 237, 230, 214, 0.45);
+            border:1px solid rgba(74, 83, 32, 0.07); margin-bottom:12px; cursor:pointer;
+            transition:transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;}
+        .incident-item:hover {transform:translateY(-3px); border-color: rgba(74,83,32,0.18);
+            box-shadow:0 14px 30px rgba(74,83,32,0.08);}
+        .incident-top {display:flex;justify-content:space-between;gap:20px;}
+        .incident-id {font-size:10px; color:var(--text-muted);}
+        .incident-name {margin-top:6px;font-size:15px;font-weight:600; color:var(--deep-olive);}
+        .severity-badge {
+            padding:
+                6px
+                10px;
+
+            border-radius:
+                20px;
+
+            font-size:
+                9px;
+
+            font-weight:
+                700;
+        }
+
+
+        .severity-critical {
+            background:
+                var(--critical-bg);
+
+            color:
+                var(--critical);
+        }
+
+
+        .severity-high {
+            background:
+                var(--high-bg);
+
+            color:
+                var(--high);
+        }
+
+
+        .severity-medium {
+            background:
+                rgba(
+                    199,
+                    204,
+                    178,
+                    0.55
+                );
+        }
+
+
+        .incident-info-row {
+            display:
+                flex;
+
+            flex-wrap:
+                wrap;
+
+            gap:
+                10px
+                20px;
+
+            margin-top:
+                14px;
+
+            font-size:
+                11px;
+
+            color:
+                var(--text-muted);
+        }
+
+
+        /* =========================================================
+           MITRE
+        ========================================================= */
+
+        .mitre-grid {
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap:
+                16px;
+        }
+
+
+        .mitre-card {
+            padding:
+                20px;
+
+            border-radius:
+                18px;
+
+            background:
+                rgba(
+                    248,
+                    245,
+                    237,
+                    0.82
+                );
+
+            border:
+                1px solid
+                var(--border);
+        }
+
+
+        .mitre-id {
+            font-size:
+                10px;
+
+            font-weight:
+                700;
+
+            color:
+                var(--olive-green);
+        }
+
+
+        .mitre-name {
+            margin-top:
+                10px;
+
+            font-size:
+                14px;
+
+            font-weight:
+                600;
+
+            color:
+                var(--deep-olive);
+        }
+
+
+        .loading-row,
+        .empty-state {
+            padding:
+                30px;
+
+            text-align:
+                center;
+
+            color:
+                var(--text-muted);
+
+            font-size:
+                12px;
+        }
+
+
+        .error-message {
+            color:
+                var(--critical);
+        }
+
+
+        /* =========================================================
+           INCIDENT DETAILS
+        ========================================================= */
+
+        .details-back {
+            border:
+                none;
+
+            background:
+                rgba(
+                    163,
+                    168,
+                    139,
+                    0.22
+                );
+
+            color:
+                var(--deep-olive);
+
+            padding:
+                10px
+                15px;
+
+            border-radius:
+                20px;
+
+            cursor:
+                pointer;
+
+            font-size:
+                11px;
+
+            font-weight:
+                600;
+
+            transition:
+                0.25s
+                ease;
+        }
+
+
+        .details-back:hover {
+            background:
+                var(--olive-mist);
+        }
+
+
+        .incident-details-grid {
+            display:
+                grid;
+
+            grid-template-columns:
+                0.9fr
+                1.1fr;
+
+            gap:
+                24px;
+
+            margin-bottom:
+                24px;
+        }
+
+
+        .details-card {
+            padding:
+                26px;
+
+            border-radius:
+                24px;
+
+            background:
+                rgba(
+                    248,
+                    245,
+                    237,
+                    0.82
+                );
+
+            border:
+                1px solid
+                var(--border);
+        }
+
+
+        .details-card-title {
+            font-family:
+                "Playfair Display",
+                serif;
+
+            font-size:
+                25px;
+
+            font-weight:
+                500;
+
+            margin-bottom:
+                22px;
+        }
+
+
+        .details-info-grid {
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap:
+                14px;
+        }
+
+
+        .detail-info-box {
+            padding:
+                16px;
+
+            border-radius:
+                16px;
+
+            background:
+                rgba(
+                    199,
+                    204,
+                    178,
+                    0.18
+                );
+        }
+
+
+        .detail-info-label {
+            font-size:
+                9px;
+
+            text-transform:
+                uppercase;
+
+            letter-spacing:
+                1px;
+
+            color:
+                var(--text-muted);
+        }
+
+
+        .detail-info-value {
+            margin-top:
+                7px;
+
+            font-size:
+                13px;
+
+            font-weight:
+                600;
+
+            color:
+                var(--deep-olive);
+
+            word-break:
+                break-word;
+        }
+
+
+        .incident-details-status {
+            display:
+                inline-flex;
+
+            align-items:
+                center;
+
+            margin-top:
+                16px;
+
+            padding:
+                7px
+                12px;
+
+            border-radius:
+                20px;
+
+            background:
+                rgba(
+                    199,
+                    204,
+                    178,
+                    0.45
+                );
+
+            font-size:
+                10px;
+
+            font-weight:
+                700;
+
+            color:
+                var(--deep-olive);
+        }
+
+
+        .details-timeline {
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                14px;
+        }
+
+
+        .timeline-item {
+            display:
+                grid;
+
+            grid-template-columns:
+                42px
+                1fr;
+
+            gap:
+                14px;
+
+            padding:
+                16px;
+
+            border-radius:
+                18px;
+
+            background:
+                rgba(
+                    237,
+                    230,
+                    214,
+                    0.5
+                );
+
+            border:
+                1px solid
+                rgba(
+                    74,
+                    83,
+                    32,
+                    0.06
+                );
+        }
+
+
+        .timeline-stage-number {
+            width:
+                38px;
+
+            height:
+                38px;
+
+            border-radius:
+                50%;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            background:
+                var(--deep-olive);
+
+            color:
+                var(--soft-cream);
+
+            font-size:
+                12px;
+
+            font-weight:
+                700;
+        }
+
+
+        .timeline-item h4 {
+            font-size:
+                13px;
+
+            color:
+                var(--deep-olive);
+        }
+
+
+        .timeline-item p {
+            margin-top:
+                6px;
+
+            font-size:
+                11px;
+
+            line-height:
+                1.6;
+
+            color:
+                var(--text-muted);
+        }
+
+
+        .details-section {
+            margin-top:
+                24px;
+        }
+
+
+        .details-section-title {
+            font-family:
+                "Playfair Display",
+                serif;
+
+            font-size:
+                28px;
+
+            font-weight:
+                500;
+
+            margin-bottom:
+                16px;
+        }
+
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+
+        @media (max-width: 1250px) {
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(3, 1fr);
+            }
+
+            .hero-grid,
+            .content-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+            .mitre-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+
+        @media (max-width: 1000px) {
+
+            .incident-details-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+        }
+
+
+        @media (max-width: 900px) {
+
+            .sidebar {
+                width:
+                    82px;
+
+                padding:
+                    20px
+                    12px;
+            }
+
+            .brand-text,
+            .nav-text,
+            .nav-label,
+            .system-status {
+                display:
+                    none;
+            }
+
+            .nav-item {
+                justify-content:
+                    center;
+            }
+
+            .main-content {
+                margin-left:
+                    82px;
+
+                padding:
+                    28px
+                    25px;
+            }
+
+            .top-header {
+                flex-direction:
+                    column;
+            }
+
+        }
+
+
+        @media (max-width: 650px) {
+
+            .sidebar {
+                display:
+                    none;
+            }
+
+            .main-content {
+                margin-left:
+                    0;
+
+                padding:
+                    24px
+                    16px;
+            }
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .mitre-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+            .details-info-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+        }
+
+        /* =================================================
+   INCIDENT MANAGEMENT
+================================================= */
+
+.incident-management-list {
+    display: grid;
+    gap: 16px;
+}
+
+.incident-management-card {
+    background: var(--soft-cream);
+    border: 1px solid var(--olive-mist);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: var(--shadow-soft);
+}
+
+.incident-management-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.incident-id {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--deep-olive);
+}
+
+.incident-type {
+    font-size: 14px;
+    color: var(--olive-green);
+    margin-top: 6px;
+}
+
+.incident-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.incident-meta-box {
+    background: white;
+    border: 1px solid var(--olive-mist);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.incident-meta-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--sage-green);
+    margin-bottom: 6px;
+}
+
+.incident-meta-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--deep-olive);
+}
+
+
+/* =================================================
+   ATTACK CHAIN
+================================================= */
+
+.attack-chain-page {
+    display: grid;
+    gap: 18px;
+}
+
+.attack-chain-flow {
+    display: grid;
+    gap: 16px;
+}
+
+.attack-stage-card {
+    background: var(--soft-cream);
+    border: 1px solid var(--olive-mist);
+    border-radius: 18px;
+    padding: 20px;
+    position: relative;
+}
+
+.attack-stage-number {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--olive-green);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.attack-stage-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--deep-olive);
+    margin-bottom: 6px;
+}
+
+.attack-stage-event {
+    font-size: 12px;
+    color: var(--olive-green);
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.attack-stage-description {
+    font-size: 14px;
+    color: #6f6a60;
+    line-height: 1.6;
+}
+
+.attack-chain-connector {
+    width: 2px;
+    height: 22px;
+    background: var(--olive-green);
+    margin: 0 auto;
+}
+
+
+/* =================================================
+   MITRE ATT&CK
+================================================= */
+
+.mitre-grid {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(230px, 1fr)
+    );
+    gap: 16px;
+}
+
+.mitre-card {
+    background: var(--soft-cream);
+    border: 1px solid var(--olive-mist);
+    border-radius: 18px;
+    padding: 20px;
+}
+
+.mitre-technique {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--olive-green);
+    margin-bottom: 10px;
+}
+
+.mitre-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--deep-olive);
+}
+
+.mitre-incident {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--sage-green);
+}
+
+
+/* =================================================
+   RESPONSIVE
+================================================= */
+
+@media (max-width: 768px) {
+
+    .incident-management-top {
+        flex-direction: column;
+    }
+
+}
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="app-layout">
+
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-mark">
+                ◈
+            </div>
+
+            <div class="brand-text">
+
+                <h2>SOC</h2>
+
+                <span>
+                    Security Center
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="nav-label">
+            Workspace
+        </div>
+
+
+        <nav class="nav-menu">
+
+            <button
+                class="nav-item active"
+                onclick="showPage('overview-page', this)"
+            >
+                <span class="nav-icon">◉</span>
+                <span class="nav-text">Overview</span>
+            </button>
+
+
+            <button
+                class="nav-item"
+                onclick="showPage('events-page', this)"
+            >
+                <span class="nav-icon">◌</span>
+                <span class="nav-text">Events</span>
+            </button>
+
+
+            <button
+                class="nav-item"
+                onclick="showPage('incidents-page', this)"
+            >
+                <span class="nav-icon">◇</span>
+                <span class="nav-text">Incidents</span>
+            </button>
+
+
+            <button
+                class="nav-item"
+                onclick="showPage('attack-chain-page', this)"
+            >
+                <span class="nav-icon">↗</span>
+                <span class="nav-text">Attack Chain</span>
+            </button>
+
+
+            <button
+                class="nav-item"
+                onclick="showPage('mitre-page', this)"
+            >
+                <span class="nav-icon">◫</span>
+                <span class="nav-text">MITRE ATT&CK</span>
+            </button>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="system-status">
+
+                <div class="status-small">
+                    Platform Status
+                </div>
+
+                <div class="status-main">
+
+                    <span class="status-dot"></span>
+
+                    All Systems Online
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+    ====================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- =====================================================
+             OVERVIEW PAGE
+        ====================================================== -->
+
+        <div
+            class="dashboard-page active-page"
+            id="overview-page"
+        >
+
+            <section class="top-header">
+
+                <div>
+
+                    <div class="eyebrow">
+
+                        <span>
+                            Security Operations Center
+                        </span>
+
+                        <span class="eyebrow-line"></span>
+
+                    </div>
+
+
+                    <h1 class="page-title">
+
+                        Security
+
+                        <span>
+                            Overview
+                        </span>
+
+                    </h1>
+
+
+                    <p class="page-subtitle">
+
+                        Monitor security activity, investigate incidents,
+                        and visualize multi-stage attack behavior across
+                        the SOC environment.
+
+                    </p>
+
+                </div>
+
+
+                <div class="header-right">
+
+                    <div class="header-date">
+
+                        <div class="date-small">
+                            Today
+                        </div>
+
+                        <div
+                            class="date-main"
+                            id="current-date"
+                        >
+                            Loading...
+                        </div>
+
+                    </div>
+
+
+                    <div class="live-indicator">
+
+                        <span class="live-dot"></span>
+
+                        Live Monitoring
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="hero-grid">
+
+                <div class="security-hero">
+
+                    <div class="hero-content">
+
+                        <div class="hero-label">
+                            Security Posture
+                        </div>
+
+
+                        <div
+                            class="hero-number"
+                            id="hero-risk-score"
+                        >
+                            00
+                        </div>
+
+
+                        <div class="hero-title">
+                            Active Security Incidents
+                        </div>
+
+
+                        <p class="hero-description">
+
+                            The platform continuously correlates
+                            security events to identify suspicious
+                            behavior and potential multi-stage attacks.
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="hero-bottom">
+
+                        <span>
+                            Monitoring Status
+                        </span>
+
+                        <strong>
+                            Live & Operational
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="focus-card">
+
+                    <div class="section-kicker">
+
+                        <h3>
+                            Priority Focus
+                        </h3>
+
+
+                        <span
+                            class="critical-pill"
+                            id="focus-severity"
+                        >
+                            Loading
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="focus-incident-id"
+                        id="focus-incident-id"
+                    >
+                        No Incident
+                    </div>
+
+
+                    <div
+                        class="focus-incident-title"
+                        id="focus-incident-title"
+                    >
+                        Loading active incident...
+                    </div>
+
+
+                    <div class="focus-meta">
+
+                        <div class="meta-box">
+
+                            <span>
+                                Source
+                            </span>
+
+                            <strong id="focus-source">
+                                --
+                            </strong>
+
+                        </div>
+
+
+                        <div class="meta-box">
+
+                            <span>
+                                Status
+                            </span>
+
+                            <strong id="focus-status">
+                                --
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="stats-grid">
+
+                <div class="stat-card">
+
+                    <div class="stat-card-top">
+
+                        <div class="stat-label">
+                            Total Events
+                        </div>
+
+                        <div class="stat-icon">
+                            ◌
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="stat-value"
+                        id="total-events"
+                    >
+                        0
+                    </div>
+
+                    <div class="stat-footer">
+                        Security activity recorded
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-card-top">
+
+                        <div class="stat-label">
+                            Incidents
+                        </div>
+
+                        <div class="stat-icon">
+                            ◇
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="stat-value"
+                        id="total-incidents"
+                    >
+                        0
+                    </div>
+
+                    <div class="stat-footer">
+                        Correlated attack activity
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card critical">
+
+                    <div class="stat-card-top">
+
+                        <div class="stat-label">
+                            Critical
+                        </div>
+
+                        <div class="stat-icon">
+                            !
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="stat-value"
+                        id="critical-incidents"
+                    >
+                        0
+                    </div>
+
+                    <div class="stat-footer">
+                        Immediate attention required
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card high">
+
+                    <div class="stat-card-top">
+
+                        <div class="stat-label">
+                            High
+                        </div>
+
+                        <div class="stat-icon">
+                            ▲
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="stat-value"
+                        id="high-incidents"
+                    >
+                        0
+                    </div>
+
+                    <div class="stat-footer">
+                        High priority investigation
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-card-top">
+
+                        <div class="stat-label">
+                            Open
+                        </div>
+
+                        <div class="stat-icon">
+                            ◉
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="stat-value"
+                        id="open-incidents"
+                    >
+                        0
+                    </div>
+
+                    <div class="stat-footer">
+                        Currently active
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="content-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2 class="panel-title">
+                                Recent Security Events
+                            </h2>
+
+                            <p class="panel-subtitle">
+                                Latest activity detected by the platform
+                            </p>
+
+                        </div>
+
+
+                        <button
+                            class="small-action"
+                            onclick="loadEvents()"
+                        >
+                            Refresh
+                        </button>
+
+                    </div>
+
+
+                    <div class="table-wrap">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>Event</th>
+                                    <th>User</th>
+                                    <th>Source</th>
+                                    <th>Time</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody
+                                id="events-table-body"
+                            >
+
+                                <tr>
+
+                                    <td
+                                        colspan="4"
+                                        class="loading-row"
+                                    >
+                                        Loading security events...
+                                    </td>
+
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2 class="panel-title">
+                                Attack Chain
+                            </h2>
+
+                            <p class="panel-subtitle">
+                                Incident correlation sequence
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="attack-chain"
+                        id="attack-chain"
+                    >
+
+                        <div class="loading-row">
+                            Loading attack chain...
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h2 class="panel-title">
+                            Active Incidents
+                        </h2>
+
+                        <p class="panel-subtitle">
+                            Correlated incidents detected by the engine
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        class="small-action"
+                        onclick="loadIncidents()"
+                    >
+                        Refresh
+                    </button>
+
+                </div>
+
+
+                <div
+                    class="incident-list"
+                    id="incident-list"
+                >
+
+                    <div class="loading-row">
+                        Loading incidents...
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section>
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h2 class="panel-title">
+                            MITRE ATT&CK Mapping
+                        </h2>
+
+                        <p class="panel-subtitle">
+                            Techniques identified during incident correlation
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="mitre-grid"
+                    id="mitre-grid"
+                >
+
+                    <div class="empty-state">
+                        Loading MITRE techniques...
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- =====================================================
+             EVENTS PAGE
+        ====================================================== -->
+
+        <div
+            class="dashboard-page"
+            id="events-page"
+        >
+
+            <section class="top-header">
+
+                <div>
+
+                    <div class="eyebrow">
+
+                        <span>
+                            Security Monitoring
+                        </span>
+
+                        <span class="eyebrow-line"></span>
+
+                    </div>
+
+
+                    <h1 class="page-title">
+
+                        Security
+
+                        <span>
+                            Events
+                        </span>
+
+                    </h1>
+
+
+                    <p class="page-subtitle">
+
+                        Complete event activity detected and processed
+                        by the SOC Detection Engine.
+
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <h2 class="panel-title">
+                            Complete Event Log
+                        </h2>
+
+                        <p class="panel-subtitle">
+                            All security events collected by the platform
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        class="small-action"
+                        onclick="loadAllEvents()"
+                    >
+                        Refresh Events
+                    </button>
+
+                </div>
+
+
+                <div class="table-wrap">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Event Type</th>
+                                <th>Username</th>
+                                <th>Source</th>
+                                <th>Event Time</th>
+                                <th>Received At</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody
+                            id="all-events-table-body"
+                        >
+
+                            <tr>
+
+                                <td
+                                    colspan="5"
+                                    class="loading-row"
+                                >
+                                    Loading security events...
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- =====================================================
+             INCIDENTS PAGE
+        ====================================================== -->
+
+        <div
+    class="dashboard-page"
+    id="incidents-page"
+>
+
+    <section class="top-header">
+
+        <div>
+
+            <div class="eyebrow">
+
+                <span>
+                    Incident Management
+                </span>
+
+                <span class="eyebrow-line"></span>
+
+            </div>
+
+            <h1 class="page-title">
+
+                Security
+
+                <span>
+                    Incidents
+                </span>
+
+            </h1>
+
+            <p class="page-subtitle">
+
+                Review correlated security incidents
+                generated by the SOC Detection Engine.
+
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2 class="panel-title">
+                    Detected Incidents
+                </h2>
+
+                <p class="panel-subtitle">
+                    Multi-stage attack incidents and correlated activity
+                </p>
+
+            </div>
+
+            <button
+                class="small-action"
+                onclick="loadIncidentsPage()"
+            >
+                Refresh
+            </button>
+
+        </div>
+
+
+        <div
+            class="incident-management-list"
+            id="incidents-management-list"
+        >
+
+            <div class="loading-row">
+                Loading incidents...
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+        
+
+        <!-- =====================================================
+             ATTACK CHAIN PAGE
+        ====================================================== -->
+
+        <div
+    class="dashboard-page"
+    id="attack-chain-page"
+>
+
+    <section class="top-header">
+
+        <div>
+
+            <div class="eyebrow">
+
+                <span>
+                    Threat Correlation
+                </span>
+
+                <span class="eyebrow-line"></span>
+
+            </div>
+
+            <h1 class="page-title">
+
+                Attack
+
+                <span>
+                    Chain
+                </span>
+
+            </h1>
+
+            <p class="page-subtitle">
+
+                Visualize how isolated security events
+                are correlated into a complete attack.
+
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2 class="panel-title">
+                    Correlated Attack Timeline
+                </h2>
+
+                <p class="panel-subtitle">
+                    Latest detected multi-stage attack sequence
+                </p>
+
+            </div>
+
+            <button
+                class="small-action"
+                onclick="loadAttackChainPage()"
+            >
+                Refresh
+            </button>
+
+        </div>
+
+
+        <div
+            class="attack-chain-page"
+            id="attack-chain-page-content"
+        >
+
+            <div class="loading-row">
+                Loading attack chain...
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+        <!-- =====================================================
+             MITRE PAGE
+        ====================================================== -->
+
+<!-- FIX #3: Changed class from 'page-section' to 'dashboard-page' so showPage()
+     can find it via querySelectorAll('.dashboard-page') and toggle .active-page.
+     Also fixed the broken / mismatched closing tags that corrupted the DOM layout,
+     and added id='mitre-page-grid' so loadMitrePage() writes to the right container. -->
+<div class="dashboard-page" id="mitre-page">
+
+    <section class="top-header">
+
+        <div>
+
+            <div class="eyebrow">
+                <span>Threat Intelligence</span>
+                <span class="eyebrow-line"></span>
+            </div>
+
+            <h1 class="page-title">
+                MITRE <span>ATT&CK</span>
+            </h1>
+
+            <p class="page-subtitle">
+                Techniques detected from the latest critical security incident.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2 class="panel-title">Detected Techniques</h2>
+                <p class="panel-subtitle">MITRE ATT&CK techniques extracted from incidents</p>
+            </div>
+
+            <button class="small-action" onclick="loadMitrePage()">
+                Refresh
+            </button>
+
+        </div>
+
+
+        <div class="mitre-grid" id="mitre-page-grid">
+            <div class="loading-row">Loading MITRE techniques...</div>
+        </div>
+
+    </section>
+
+</div>
+
+
+        <!-- =====================================================
+             INCIDENT DETAILS PAGE
+        ====================================================== -->
+
+        <div
+            class="dashboard-page"
+            id="incident-details-page"
+        >
+
+            <section class="top-header">
+
+                <div>
+
+                    <div class="eyebrow">
+
+                        <span>
+                            Incident Investigation
+                        </span>
+
+                        <span class="eyebrow-line"></span>
+
+                    </div>
+
+
+                    <h1 class="page-title">
+
+                        Incident
+
+                        <span>
+                            Details
+                        </span>
+
+                    </h1>
+
+
+                    <p
+                        class="page-subtitle"
+                        id="details-page-subtitle"
+                    >
+                        Detailed analysis of the selected security incident.
+                    </p>
+
+                </div>
+
+
+                <div class="header-right">
+
+                    <button
+                        class="details-back"
+                        onclick="goBackToIncidents()"
+                    >
+                        ← Back to Incidents
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <section class="incident-details-grid">
+
+                <div class="details-card">
+
+                    <h2 class="details-card-title">
+                        Incident Overview
+                    </h2>
+
+
+                    <div class="details-info-grid">
+
+                        <div class="detail-info-box">
+
+                            <div class="detail-info-label">
+                                Incident ID
+                            </div>
+
+                            <div
+                                class="detail-info-value"
+                                id="details-incident-id"
+                            >
+                                --
+                            </div>
+
+                        </div>
+
+
+                        <div class="detail-info-box">
+
+                            <div class="detail-info-label">
+                                Severity
+                            </div>
+
+                            <div
+                                class="detail-info-value"
+                                id="details-severity"
+                            >
+                                --
+                            </div>
+
+                        </div>
+
+
+                        <div class="detail-info-box">
+
+                            <div class="detail-info-label">
+                                Username
+                            </div>
+
+                            <div
+                                class="detail-info-value"
+                                id="details-username"
+                            >
+                                --
+                            </div>
+
+                        </div>
+
+
+                        <div class="detail-info-box">
+
+                            <div class="detail-info-label">
+                                Source IP
+                            </div>
+
+                            <div
+                                class="detail-info-value"
+                                id="details-source"
+                            >
+                                --
+                            </div>
+
+                        </div>
+
+
+                        <div class="detail-info-box">
+
+                            <div class="detail-info-label">
+                                Created At
+                            </div>
+
+                            <div
+                                class="detail-info-value"
+                                id="details-created"
+                            >
+                                --
+                            </div>
+
+                        </div>
+
+
+                        <div class="detail-info-box">
+
+                            <div class="detail-info-label">
+                                Updated At
+                            </div>
+
+                            <div
+                                class="detail-info-value"
+                                id="details-updated"
+                            >
+                                --
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="incident-details-status"
+                        id="details-status"
+                    >
+                        STATUS: --
+                    </div>
+
+                </div>
+
+
+                <div class="details-card">
+
+                    <h2 class="details-card-title">
+                        MITRE ATT&CK Techniques
+                    </h2>
+
+
+                    <div
+                        class="mitre-grid"
+                        id="details-mitre-grid"
+                    >
+
+                        <div class="empty-state">
+                            No techniques available.
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="details-section">
+
+                <h2 class="details-section-title">
+                    Attack Timeline
+                </h2>
+
+
+                <div
+                    class="details-timeline"
+                    id="details-timeline"
+                >
+
+                    <div class="empty-state">
+                        No timeline available.
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="details-section">
+
+                <h2 class="details-section-title">
+                    Attack Stages
+                </h2>
+
+
+                <div class="panel">
+
+                    <div
+                        class="attack-chain"
+                        id="details-attack-chain"
+                    >
+
+                        <div class="empty-state">
+                            No attack stages available.
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+    </main>
+
+</div>
+
+
+<script>
+
+    let currentIncidents = [];
+
+
+    let selectedIncident = null;
+
+
+    /* =========================================================
+       DATE
+    ========================================================= */
+
+    function updateCurrentDate() {
+
+        const now =
+            new Date();
+
+
+        const formattedDate =
+            now.toLocaleDateString(
+                "en-US",
+                {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric"
+                }
+            );
+
+
+        const dateElement =
+            document.getElementById(
+                "current-date"
+            );
+
+
+        if (dateElement) {
+
+            dateElement.textContent =
+                formattedDate;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       NAVIGATION
+    ========================================================= */
+
+// FIX #1 & #2: Use classList.add/remove('active-page') to be consistent with
+// the CSS which defines visibility via .dashboard-page { display:none } and
+// .dashboard-page.active-page { display:block }. Inline style.display beats
+// CSS class rules, so .active-page could never override the hidden state.
+// Also added missing loadOverview() definition (Bug #1) and replaced the
+// broken loadIncidents() call for incidents-page with loadIncidentsPage().
+function showPage(pageId, clickedButton) {
+
+    const pages = document.querySelectorAll(".dashboard-page");
+
+    pages.forEach(function(page) {
+        page.classList.remove("active-page");
+    });
+
+    const targetPage = document.getElementById(pageId);
+
+    if (targetPage) {
+        targetPage.classList.add("active-page");
+    }
+
+    const navItems = document.querySelectorAll(".nav-item");
+
+    navItems.forEach(function(item) {
+        item.classList.remove("active");
+    });
+
+    if (clickedButton) {
+        clickedButton.classList.add("active");
+    }
+
+    if (pageId === "overview-page") {
+        loadOverview();
+    }
+
+    if (pageId === "events-page") {
+        loadAllEvents();
+    }
+
+    if (pageId === "incidents-page") {
+        loadIncidentsPage();
+    }
+
+    if (pageId === "attack-chain-page") {
+        loadAttackChainPage();
+    }
+
+    if (pageId === "mitre-page") {
+        loadMitrePage();
+    }
+}
+
+// FIX #2: Define the previously missing loadOverview() function.
+// Its absence caused a ReferenceError whenever the Overview nav item was clicked.
+async function loadOverview() {
+    await Promise.all([
+        loadStats(),
+        loadEvents(),
+        loadIncidents()
+    ]);
+}
+
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+
+    function escapeHtml(value) {
+
+        if (
+            value === null ||
+            value === undefined
+        ) {
+
+            return "--";
+
+        }
+
+
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+    }
+
+
+    function formatDateTime(timestamp) {
+
+        if (!timestamp) {
+
+            return "--";
+
+        }
+
+
+        const date =
+            new Date(timestamp);
+
+
+        if (isNaN(date.getTime())) {
+
+            return timestamp;
+
+        }
+
+
+        return date.toLocaleString(
+            "en-US",
+            {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        );
+
+    }
+
+
+    function getEventClass(eventType) {
+
+        if (
+            eventType ===
+            "FAILED_LOGIN"
+        ) {
+
+            return "failed";
+
+        }
+
+
+        if (
+            eventType ===
+            "SUCCESSFUL_LOGIN"
+        ) {
+
+            return "success";
+
+        }
+
+
+        if (
+            eventType ===
+            "PRIVILEGE_ESCALATION"
+        ) {
+
+            return "escalation";
+
+        }
+
+
+        if (
+            eventType ===
+            "SENSITIVE_FILE_ACCESS"
+        ) {
+
+            return "sensitive";
+
+        }
+
+
+        return "";
+
+    }
+
+
+    function getSeverityClass(severity) {
+
+        if (
+            severity ===
+            "CRITICAL"
+        ) {
+
+            return "severity-critical";
+
+        }
+
+
+        if (
+            severity ===
+            "HIGH"
+        ) {
+
+            return "severity-high";
+
+        }
+
+
+        return "severity-medium";
+
+    }
+
+
+    /* =========================================================
+       LOAD STATS
+    ========================================================= */
+
+    async function loadStats() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/stats"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load statistics"
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            document.getElementById(
+                "total-events"
+            ).textContent =
+                data.total_events ?? 0;
+
+
+            document.getElementById(
+                "total-incidents"
+            ).textContent =
+                data.total_incidents ?? 0;
+
+
+            document.getElementById(
+                "critical-incidents"
+            ).textContent =
+                data.critical_incidents ?? 0;
+
+
+            document.getElementById(
+                "high-incidents"
+            ).textContent =
+                data.high_incidents ?? 0;
+
+
+            document.getElementById(
+                "open-incidents"
+            ).textContent =
+                data.open_incidents ?? 0;
+
+
+            document.getElementById(
+                "hero-risk-score"
+            ).textContent =
+                String(
+                    data.open_incidents ?? 0
+                ).padStart(
+                    2,
+                    "0"
+                );
+
+        } catch (error) {
+
+            console.error(
+                "Stats error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       LOAD EVENTS
+    ========================================================= */
+
+    async function loadEvents() {
+
+        const tableBody =
+            document.getElementById(
+                "events-table-body"
+            );
+
+
+        if (!tableBody) {
+
+            return;
+
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/events"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load events"
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            const events =
+                data.events || [];
+
+
+            if (
+                events.length === 0
+            ) {
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td
+                            colspan="4"
+                            class="empty-state"
+                        >
+                            No security events available.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+
+            }
+
+
+            const recentEvents =
+                events
+                    .slice(-10)
+                    .reverse();
+
+
+            tableBody.innerHTML =
+                recentEvents.map(
+                    event => `
+
+                    <tr>
+
+                        <td>
+
+                            <span
+                                class="
+                                    event-type
+                                    ${getEventClass(
+                                        event.event_type
+                                    )}
+                                "
+                            >
+
+                                <span
+                                    class="event-dot"
+                                ></span>
+
+                                ${escapeHtml(
+                                    event.event_type
+                                )}
+
+                            </span>
+
+                        </td>
+
+
+                        <td>
+
+                            ${escapeHtml(
+                                event.username
+                            )}
+
+                        </td>
+
+
+                        <td
+                            class="muted-cell"
+                        >
+
+                            ${escapeHtml(
+                                event.source
+                            )}
+
+                        </td>
+
+
+                        <td
+                            class="muted-cell"
+                        >
+
+                            ${formatDateTime(
+                                event.timestamp
+                            )}
+
+                        </td>
+
+                    </tr>
+
+                `
+                ).join("");
+
+        } catch (error) {
+
+            console.error(
+                "Events error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       LOAD ALL EVENTS
+    ========================================================= */
+
+    async function loadAllEvents() {
+
+        const tableBody =
+            document.getElementById(
+                "all-events-table-body"
+            );
+
+
+        if (!tableBody) {
+
+            return;
+
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/events"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load events"
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            const events =
+                data.events || [];
+
+
+            if (
+                events.length === 0
+            ) {
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td
+                            colspan="5"
+                            class="empty-state"
+                        >
+                            No security events available.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+
+            }
+
+
+            const sortedEvents =
+                events
+                    .slice()
+                    .reverse();
+
+
+            tableBody.innerHTML =
+                sortedEvents.map(
+                    event => `
+
+                    <tr>
+
+                        <td>
+
+                            <span
+                                class="
+                                    event-type
+                                    ${getEventClass(
+                                        event.event_type
+                                    )}
+                                "
+                            >
+
+                                <span
+                                    class="event-dot"
+                                ></span>
+
+                                ${escapeHtml(
+                                    event.event_type
+                                )}
+
+                            </span>
+
+                        </td>
+
+
+                        <td>
+
+                            ${escapeHtml(
+                                event.username
+                            )}
+
+                        </td>
+
+
+                        <td
+                            class="muted-cell"
+                        >
+
+                            ${escapeHtml(
+                                event.source
+                            )}
+
+                        </td>
+
+
+                        <td
+                            class="muted-cell"
+                        >
+
+                            ${formatDateTime(
+                                event.timestamp
+                            )}
+
+                        </td>
+
+
+                        <td
+                            class="muted-cell"
+                        >
+
+                            ${formatDateTime(
+                                event.received_at
+                            )}
+
+                        </td>
+
+                    </tr>
+
+                `
+                ).join("");
+
+        } catch (error) {
+
+            console.error(
+                "All events error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       LOAD INCIDENTS
+    ========================================================= */
+
+    async function loadIncidents() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/incidents"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Failed to load incidents"
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            const incidents =
+                data.incidents || [];
+
+
+            currentIncidents =
+                incidents;
+
+
+            renderFocusIncident(
+                incidents
+            );
+
+
+            renderAttackChain(
+                incidents
+            );
+
+
+            renderFullAttackChain(
+                incidents
+            );
+
+
+            renderMitreTechniques(
+                incidents
+            );
+
+
+            renderFullMitreTechniques(
+                incidents
+            );
+
+
+            renderIncidentLists(
+                incidents
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Incidents error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       INCIDENT LISTS
+    ========================================================= */
+
+    function renderIncidentLists(
+        incidents
+    ) {
+
+        const incidentList =
+            document.getElementById(
+                "incident-list"
+            );
+
+
+        const fullIncidentList =
+            document.getElementById(
+                "full-incident-list"
+            );
+
+
+        if (
+            incidents.length === 0
+        ) {
+
+            const emptyContent = `
+                <div class="empty-state">
+                    No active incidents detected.
+                </div>
+            `;
+
+
+            if (incidentList) {
+
+                incidentList.innerHTML =
+                    emptyContent;
+
+            }
+
+
+            if (fullIncidentList) {
+
+                fullIncidentList.innerHTML =
+                    emptyContent;
+
+            }
+
+
+            return;
+
+        }
+
+
+        const html =
+            incidents
+                .slice()
+                .reverse()
+                .map(
+                    incident => `
+
+                    <div
+                        class="incident-item"
+                        onclick="openIncidentDetailsById('${incident.incident_id}')"
+                    >
+
+                        <div class="incident-top">
+
+                            <div>
+
+                                <div class="incident-id">
+
+                                    ${escapeHtml(
+                                        incident.incident_id
+                                    )}
+
+                                </div>
+
+
+                                <div class="incident-name">
+
+                                    ${escapeHtml(
+                                        incident.incident_type
+                                    )}
+
+                                </div>
+
+                            </div>
+
+
+                            <span
+                                class="
+                                    severity-badge
+                                    ${getSeverityClass(
+                                        incident.severity
+                                    )}
+                                "
+                            >
+
+                                ${escapeHtml(
+                                    incident.severity
+                                )}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="incident-info-row">
+
+                            <span>
+
+                                User:
+
+                                <strong>
+
+                                    ${escapeHtml(
+                                        incident.username
+                                    )}
+
+                                </strong>
+
+                            </span>
+
+
+                            <span>
+
+                                Source:
+
+                                <strong>
+
+                                    ${escapeHtml(
+                                        incident.source
+                                    )}
+
+                                </strong>
+
+                            </span>
+
+
+                            <span>
+
+                                Status:
+
+                                <strong>
+
+                                    ${escapeHtml(
+                                        incident.status
+                                    )}
+
+                                </strong>
+
+                            </span>
+
+
+                            <span>
+
+                                Updated:
+
+                                <strong>
+
+                                    ${formatDateTime(
+                                        incident.updated_at
+                                    )}
+
+                                </strong>
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                `
+                )
+                .join("");
+
+
+        if (incidentList) {
+
+            incidentList.innerHTML =
+                html;
+
+        }
+
+
+        if (fullIncidentList) {
+
+            fullIncidentList.innerHTML =
+                html;
+
+        }
+
+    }
+
+
+    /* =========================================================
+       PRIORITY INCIDENT
+    ========================================================= */
+
+    function renderFocusIncident(
+        incidents
+    ) {
+
+        const severityElement =
+            document.getElementById(
+                "focus-severity"
+            );
+
+
+        const idElement =
+            document.getElementById(
+                "focus-incident-id"
+            );
+
+
+        const titleElement =
+            document.getElementById(
+                "focus-incident-title"
+            );
+
+
+        const sourceElement =
+            document.getElementById(
+                "focus-source"
+            );
+
+
+        const statusElement =
+            document.getElementById(
+                "focus-status"
+            );
+
+
+        if (
+            incidents.length === 0
+        ) {
+
+            severityElement.textContent =
+                "No Threat";
+
+
+            idElement.textContent =
+                "No Active Incident";
+
+
+            titleElement.textContent =
+                "No correlated security incidents detected.";
+
+
+            sourceElement.textContent =
+                "--";
+
+
+            statusElement.textContent =
+                "CLEAR";
+
+
+            return;
+
+        }
+
+
+        const priorityIncident =
+            incidents.find(
+                incident =>
+                    incident.severity ===
+                    "CRITICAL"
+            ) || incidents[0];
+
+
+        severityElement.textContent =
+            priorityIncident.severity ||
+            "UNKNOWN";
+
+
+        idElement.textContent =
+            priorityIncident.incident_id ||
+            "--";
+
+
+        titleElement.textContent =
+            priorityIncident.incident_type ||
+            "Security Incident";
+
+
+        sourceElement.textContent =
+            priorityIncident.source ||
+            "--";
+
+
+        statusElement.textContent =
+            priorityIncident.status ||
+            "--";
+
+    }
+
+
+    /* =========================================================
+       ATTACK CHAIN
+    ========================================================= */
+
+    function getAttackChainHtml(
+        incidents
+    ) {
+
+        if (
+            incidents.length === 0
+        ) {
+
+            return `
+                <div class="empty-state">
+                    No attack chain detected.
+                </div>
+            `;
+
+        }
+
+
+        const priorityIncident =
+            incidents.find(
+                incident =>
+                    incident.severity ===
+                    "CRITICAL"
+            ) || incidents[0];
+
+
+        const stages =
+            priorityIncident.attack_stages || [];
+
+
+        if (
+            stages.length === 0
+        ) {
+
+            return `
+                <div class="empty-state">
+                    No attack stages available.
+                </div>
+            `;
+
+        }
+
+
+        return stages.map(
+            (stage, index) => `
+
+            <div class="attack-stage">
+
+                <div class="stage-number">
+
+                    ${index + 1}
+
+                </div>
+
+
+                <div class="stage-content">
+
+                    <h4>
+
+                        ${escapeHtml(
+                            stage.stage
+                        )}
+
+                    </h4>
+
+
+                    <p>
+
+                        Event:
+
+                        ${escapeHtml(
+                            stage.event
+                        )}
+
+                        ${
+                            stage.count
+                                ? ` · Count: ${escapeHtml(
+                                    stage.count
+                                )}`
+                                : ""
+                        }
+
+                    </p>
+
+
+                    ${
+                        stage.mitre_id
+                            ? `
+                                <span
+                                    class="stage-mitre"
+                                >
+
+                                    ${escapeHtml(
+                                        stage.mitre_id
+                                    )}
+
+                                </span>
+                            `
+                            : ""
+                    }
+
+                </div>
+
+            </div>
+
+        `
+        ).join("");
+
+    }
+
+
+    function renderAttackChain(
+        incidents
+    ) {
+
+        const attackChain =
+            document.getElementById(
+                "attack-chain"
+            );
+
+
+        if (attackChain) {
+
+            attackChain.innerHTML =
+                getAttackChainHtml(
+                    incidents
+                );
+
+        }
+
+    }
+
+
+    function renderFullAttackChain(
+        incidents
+    ) {
+
+        const fullAttackChain =
+            document.getElementById(
+                "full-attack-chain"
+            );
+
+
+        if (fullAttackChain) {
+
+            fullAttackChain.innerHTML =
+                getAttackChainHtml(
+                    incidents
+                );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       MITRE
+    ========================================================= */
+
+    function getMitreHtml(
+        incidents
+    ) {
+
+        if (
+            incidents.length === 0
+        ) {
+
+            return `
+                <div class="empty-state">
+                    No MITRE techniques detected.
+                </div>
+            `;
+
+        }
+
+
+        const priorityIncident =
+            incidents.find(
+                incident =>
+                    incident.severity ===
+                    "CRITICAL"
+            ) || incidents[0];
+
+
+        const techniques =
+            priorityIncident.mitre_attack || [];
+
+
+        if (
+            techniques.length === 0
+        ) {
+
+            return `
+                <div class="empty-state">
+                    No MITRE techniques available.
+                </div>
+            `;
+
+        }
+
+
+        return techniques.map(
+            technique => `
+
+            <div class="mitre-card">
+
+                <div class="mitre-id">
+
+                    ${escapeHtml(
+                        technique.technique
+                    )}
+
+                </div>
+
+
+                <div class="mitre-name">
+
+                    ${escapeHtml(
+                        technique.name
+                    )}
+
+                </div>
+
+            </div>
+
+        `
+        ).join("");
+
+    }
+
+
+    function renderMitreTechniques(
+        incidents
+    ) {
+
+        const mitreGrid =
+            document.getElementById(
+                "mitre-grid"
+            );
+
+
+        if (mitreGrid) {
+
+            mitreGrid.innerHTML =
+                getMitreHtml(
+                    incidents
+                );
+
+        }
+
+    }
+
+
+    function renderFullMitreTechniques(
+        incidents
+    ) {
+
+        const fullMitreGrid =
+            document.getElementById(
+                "full-mitre-grid"
+            );
+
+
+        if (fullMitreGrid) {
+
+            fullMitreGrid.innerHTML =
+                getMitreHtml(
+                    incidents
+                );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       INCIDENT DETAILS
+    ========================================================= */
+
+    function openIncidentDetailsById(
+        incidentId
+    ) {
+
+        const incident =
+            currentIncidents.find(
+                item =>
+                    item.incident_id ===
+                    incidentId
+            );
+
+
+        if (!incident) {
+
+            console.error(
+                "Incident not found:",
+                incidentId
+            );
+
+            return;
+
+        }
+
+
+        selectedIncident =
+            incident;
+
+
+        renderIncidentDetails(
+            incident
+        );
+
+
+        const pages =
+            document.querySelectorAll(
+                ".dashboard-page"
+            );
+
+
+        pages.forEach(
+            page => {
+
+                page.classList.remove(
+                    "active-page"
+                );
+
+            }
+        );
+
+
+        const detailsPage =
+            document.getElementById(
+                "incident-details-page"
+            );
+
+
+        if (detailsPage) {
+
+            detailsPage.classList.add(
+                "active-page"
+            );
+
+        }
+
+
+        const navItems =
+            document.querySelectorAll(
+                ".nav-item"
+            );
+
+
+        navItems.forEach(
+            item => {
+
+                item.classList.remove(
+                    "active"
+                );
+
+            }
+        );
+
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+    }
+
+
+    function goBackToIncidents() {
+
+        const pages =
+            document.querySelectorAll(
+                ".dashboard-page"
+            );
+
+
+        pages.forEach(
+            page => {
+
+                page.classList.remove(
+                    "active-page"
+                );
+
+            }
+        );
+
+
+        const incidentsPage =
+            document.getElementById(
+                "incidents-page"
+            );
+
+
+        if (incidentsPage) {
+
+            incidentsPage.classList.add(
+                "active-page"
+            );
+
+        }
+
+
+        const navItems =
+            document.querySelectorAll(
+                ".nav-item"
+            );
+
+
+        navItems.forEach(
+            item => {
+
+                item.classList.remove(
+                    "active"
+                );
+
+            }
+        );
+
+
+        const incidentsButton =
+            document.querySelectorAll(
+                ".nav-item"
+            )[2];
+
+
+        if (incidentsButton) {
+
+            incidentsButton.classList.add(
+                "active"
+            );
+
+        }
+
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+    }
+
+
+    function renderIncidentDetails(
+        incident
+    ) {
+
+        document.getElementById(
+            "details-incident-id"
+        ).textContent =
+            incident.incident_id || "--";
+
+
+        document.getElementById(
+            "details-severity"
+        ).textContent =
+            incident.severity || "--";
+
+
+        document.getElementById(
+            "details-username"
+        ).textContent =
+            incident.username || "--";
+
+
+        document.getElementById(
+            "details-source"
+        ).textContent =
+            incident.source || "--";
+
+
+        document.getElementById(
+            "details-created"
+        ).textContent =
+            formatDateTime(
+                incident.created_at
+            );
+
+
+        document.getElementById(
+            "details-updated"
+        ).textContent =
+            formatDateTime(
+                incident.updated_at
+            );
+
+
+        document.getElementById(
+            "details-status"
+        ).textContent =
+            `STATUS: ${
+                incident.status || "--"
+            }`;
+
+
+        document.getElementById(
+            "details-page-subtitle"
+        ).textContent =
+            `Detailed analysis of ${
+                incident.incident_id ||
+                "the selected incident"
+            } — ${
+                incident.incident_type ||
+                "Security Incident"
+            }.`;
+
+
+        renderDetailsTimeline(
+            incident.timeline || []
+        );
+
+
+        renderDetailsAttackChain(
+            incident.attack_stages || []
+        );
+
+
+        renderDetailsMitre(
+            incident.mitre_attack || []
+        );
+
+    }
+
+
+    function renderDetailsTimeline(
+        timeline
+    ) {
+
+        const container =
+            document.getElementById(
+                "details-timeline"
+            );
+
+
+        if (!container) {
+
+            return;
+
+        }
+
+
+        if (
+            timeline.length === 0
+        ) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+                    No timeline available.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+            timeline.map(
+                item => `
+
+                <div class="timeline-item">
+
+                    <div class="timeline-stage-number">
+
+                        ${escapeHtml(
+                            item.stage
+                        )}
+
+                    </div>
+
+
+                    <div>
+
+                        <h4>
+
+                            ${escapeHtml(
+                                item.name
+                            )}
+
+                        </h4>
+
+
+                        <p>
+
+                            ${escapeHtml(
+                                item.description
+                            )}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            `
+            )
+            .join("");
+
+    }
+
+
+    function renderDetailsAttackChain(
+        stages
+    ) {
+
+        const container =
+            document.getElementById(
+                "details-attack-chain"
+            );
+
+
+        if (!container) {
+
+            return;
+
+        }
+
+
+        if (
+            stages.length === 0
+        ) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+                    No attack stages available.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+            stages.map(
+                (stage, index) => `
+
+                <div class="attack-stage">
+
+                    <div class="stage-number">
+
+                        ${index + 1}
+
+                    </div>
+
+
+                    <div class="stage-content">
+
+                        <h4>
+
+                            ${escapeHtml(
+                                stage.stage
+                            )}
+
+                        </h4>
+
+
+                        <p>
+
+                            Event:
+
+                            ${escapeHtml(
+                                stage.event
+                            )}
+
+                            ${
+                                stage.count
+                                    ? ` · Count: ${escapeHtml(
+                                        stage.count
+                                    )}`
+                                    : ""
+                            }
+
+                        </p>
+
+
+                        ${
+                            stage.mitre_id
+                                ? `
+                                    <span class="stage-mitre">
+
+                                        ${escapeHtml(
+                                            stage.mitre_id
+                                        )}
+
+                                    </span>
+                                `
+                                : ""
+                        }
+
+                    </div>
+
+                </div>
+
+            `
+            )
+            .join("");
+
+    }
+
+
+    function renderDetailsMitre(
+        techniques
+    ) {
+
+        const container =
+            document.getElementById(
+                "details-mitre-grid"
+            );
+
+
+        if (!container) {
+
+            return;
+
+        }
+
+
+        if (
+            techniques.length === 0
+        ) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+                    No MITRE techniques available.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+            techniques.map(
+                technique => `
+
+                <div class="mitre-card">
+
+                    <div class="mitre-id">
+
+                        ${escapeHtml(
+                            technique.technique
+                        )}
+
+                    </div>
+
+
+                    <div class="mitre-name">
+
+                        ${escapeHtml(
+                            technique.name
+                        )}
+
+                    </div>
+
+                </div>
+
+            `
+            )
+            .join("");
+
+    }
+
+
+    /* =========================================================
+       INITIAL LOAD
+    ========================================================= */
+
+    async function loadDashboard() {
+
+        updateCurrentDate();
+
+        await Promise.all([
+            loadStats(),
+            loadEvents(),
+            loadIncidents()
+        ]);
+
+    }
+
+
+    loadDashboard();
+
+
+    /* =========================================================
+       AUTO REFRESH
+    ========================================================= */
+
+    // FIX #6: Refresh all page loaders every 5 s, not just the overview.
+    // Previously loadAttackChainPage/loadMitrePage/loadIncidentsPage were only
+    // called once at startup — if the backend wasn't ready yet they stayed on
+    // 'Loading...' forever and never retried.
+    setInterval(function() {
+        loadDashboard();
+        loadIncidentsPage();
+        loadAttackChainPage();
+        loadMitrePage();
+    }, 5000);
+
+// FIX #4: fetch() is now INSIDE the try block. Previously it was placed
+// before the try, so any network error (e.g. detection-engine not ready)
+// threw an uncaught exception that propagated up into loadAttackChainPage()
+// and loadMitrePage(), leaving them permanently stuck on 'Loading...'.
+async function getLatestCriticalIncident() {
+
+    try {
+
+        const response = await fetch("/api/incidents");
+
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status + " from /api/incidents");
+        }
+
+        const data = await response.json();
+
+        if (!data.incidents || data.incidents.length === 0) {
+            return null;
+        }
+
+        const incidents = data.incidents;
+
+        const criticalIncidents = incidents.filter(
+            function(incident) {
+                return incident.severity === "CRITICAL";
+            }
+        );
+
+        if (criticalIncidents.length === 0) {
+            return incidents[0];
+        }
+
+        criticalIncidents.sort(function(a, b) {
+            return new Date(b.updated_at) - new Date(a.updated_at);
+        });
+
+        return criticalIncidents[0];
+
+    } catch (error) {
+
+        console.error("Failed to load latest incident:", error);
+        return null;
+
+    }
+
+}
+
+
+async function loadIncidentsPage() {
+
+    const container = document.getElementById(
+        "incidents-management-list"
+    );
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="loading-row">
+            Loading incidents...
+        </div>
+    `;
+
+    try {
+
+        const response = await fetch(
+            "/api/incidents"
+        );
+
+        const data = await response.json();
+
+        const incidents = data.incidents || [];
+
+        if (incidents.length === 0) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+                    No incidents detected yet.
+                </div>
+            `;
+
+            return;
+
+        }
+
+        const sortedIncidents = incidents.sort(
+            (a, b) =>
+                new Date(b.updated_at) -
+                new Date(a.updated_at)
+        );
+
+        container.innerHTML = sortedIncidents.map(
+            incident => `
+
+                <div class="incident-management-card">
+
+                    <div class="incident-management-top">
+
+                        <div>
+
+                            <div class="incident-id">
+                                ${incident.incident_id}
+                            </div>
+
+                            <div class="incident-type">
+                                ${formatText(
+                                    incident.incident_type
+                                )}
+                            </div>
+
+                        </div>
+
+                        <span
+                            class="severity-badge severity-${incident.severity.toLowerCase()}"
+                        >
+                            ${incident.severity}
+                        </span>
+
+                    </div>
+
+
+                    <div class="incident-meta-grid">
+
+                        <div class="incident-meta-box">
+
+                            <div class="incident-meta-label">
+                                User
+                            </div>
+
+                            <div class="incident-meta-value">
+                                ${incident.username}
+                            </div>
+
+                        </div>
+
+
+                        <div class="incident-meta-box">
+
+                            <div class="incident-meta-label">
+                                Source
+                            </div>
+
+                            <div class="incident-meta-value">
+                                ${incident.source}
+                            </div>
+
+                        </div>
+
+
+                        <div class="incident-meta-box">
+
+                            <div class="incident-meta-label">
+                                Status
+                            </div>
+
+                            <div class="incident-meta-value">
+                                ${incident.status}
+                            </div>
+
+                        </div>
+
+
+                        <div class="incident-meta-box">
+
+                            <div class="incident-meta-label">
+                                Attack Stages
+                            </div>
+
+                            <div class="incident-meta-value">
+                                ${incident.attack_stages?.length || 0}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `
+        ).join("");
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+        container.innerHTML = `
+            <div class="empty-state">
+                Failed to load incidents.
+            </div>
+        `;
+
+    }
+
+}
+
+
+// FIX #5: Wrapped entire loadAttackChainPage() in try/catch so that any error
+// (including those thrown by getLatestCriticalIncident()) is caught and the
+// 'Loading attack chain...' placeholder is always replaced with a real message.
+async function loadAttackChainPage() {
+
+    const container = document.getElementById("attack-chain-page-content");
+
+    if (!container) { return; }
+
+    container.innerHTML = `<div class="loading-row">Loading attack chain...</div>`;
+
+    try {
+
+        const incident = await getLatestCriticalIncident();
+
+        if (!incident) {
+            container.innerHTML = `<div class="empty-state">No critical multi-stage attack detected.</div>`;
+            return;
+        }
+
+        const stages = (incident.attack_stages || []).slice().sort(
+            function(first, second) {
+                const stageOrder = {
+                    "Brute Force": 1,
+                    "Successful Login": 2,
+                    "Privilege Escalation": 3,
+                    "Sensitive Data Access": 4
+                };
+                return (stageOrder[first.stage] || 99) -
+                    (stageOrder[second.stage] || 99);
+            }
+        );
+
+        if (stages.length === 0) {
+            container.innerHTML = `<div class="empty-state">No attack stages detected.</div>`;
+            return;
+        }
+
+        container.innerHTML = `
+
+            <div class="incident-management-card">
+                <div class="incident-management-top">
+                    <div>
+                        <div class="incident-id">${incident.incident_id}</div>
+                        <div class="incident-type">${formatText(incident.incident_type)}</div>
+                    </div>
+                    <span class="severity-badge severity-${incident.severity.toLowerCase()}">
+                        ${incident.severity}
+                    </span>
+                </div>
+            </div>
+
+            <div class="attack-chain-flow">
+                ${stages.map(function(stage, index) {
+                    return `
+                        <div class="attack-stage-card">
+                            <div class="attack-stage-number">${index + 1}</div>
+                            <div class="attack-stage-title">${escapeHtml(stage.stage)}</div>
+                            <div class="attack-stage-event">${formatText(stage.event)}</div>
+                            <div class="attack-stage-description">${stage.count ? `Count: ${escapeHtml(stage.count)}` : ""}</div>
+                        </div>
+                        ${index < stages.length - 1 ? '<div class="attack-chain-connector"></div>' : ''}
+                    `;
+                }).join("")}
+            </div>
+
+        `;
+
+    } catch (error) {
+        console.error("loadAttackChainPage error:", error);
+        container.innerHTML = `<div class="empty-state error-message">Failed to load attack chain. Check console for details.</div>`;
+    }
+
+}
+
+
+// FIX #3 (continued): loadMitrePage() now writes to 'mitre-page-grid'
+// (the dedicated MITRE page container added in Fix #3) so the MITRE page
+// never stays stuck on 'Loading MITRE techniques...' after navigation.
+async function loadMitrePage() {
+
+    const container =
+        document.getElementById("mitre-page-grid") ||
+        document.getElementById("mitre-grid");
+
+    if (!container) {
+        console.error("MITRE ERROR: no mitre container found");
+        return;
+    }
+
+    container.innerHTML = `<div class="loading-row">Loading MITRE ATT&CK techniques...</div>`;
+
+    try {
+
+        const incident = await getLatestCriticalIncident();
+
+        if (!incident) {
+            container.innerHTML = `<div class="empty-state">No MITRE techniques available.</div>`;
+            return;
+        }
+
+        const techniques = incident.mitre_attack || [];
+
+        if (techniques.length === 0) {
+            container.innerHTML = `<div class="empty-state">No MITRE techniques mapped yet.</div>`;
+            return;
+        }
+
+        container.innerHTML = techniques.map(function(technique) {
+            return `
+                <div class="mitre-card">
+                    <div class="mitre-technique">${technique.technique || "N/A"}</div>
+                    <div class="mitre-name">${technique.name || "Unknown Technique"}</div>
+                    <div class="mitre-incident">Detected in: ${incident.incident_id}</div>
+                </div>
+            `;
+        }).join("");
+
+    } catch (error) {
+
+        console.error("MITRE PAGE ERROR:", error);
+        container.innerHTML = `<div class="empty-state">Failed to load MITRE ATT&CK techniques.</div>`;
+
+    }
+
+}
+
+
+function formatText(value) {
+
+    if (!value) {
+        return "N/A";
+    }
+
+    return value
+        .replaceAll("_", " ")
+        .toLowerCase()
+        .replace(
+            /\b\w/g,
+            character =>
+                character.toUpperCase()
+        );
+
+}
+loadIncidentsPage();
+loadAttackChainPage();
+loadMitrePage();
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,78 @@
+services:
+
+  zabbix-db:
+    image: postgres:17-alpine
+    container_name: zabbix-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix_secure_password
+    volumes:
+      - zabbix_db_data:/var/lib/postgresql/data
+    networks:
+      - zabbix_net
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-latest
+    container_name: zabbix-server
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      POSTGRES_DB: zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix_secure_password
+    ports:
+      - "10051:10051"
+    depends_on:
+      - zabbix-db
+    networks:
+      - zabbix_net
+      - soc_detection_network
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
+    container_name: zabbix-web
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: zabbix-db
+      POSTGRES_DB: zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix_secure_password
+      ZBX_SERVER_HOST: zabbix-server
+      PHP_TZ: Africa/Tripoli
+    ports:
+      - "8082:8080"
+    depends_on:
+      - zabbix-server
+      - zabbix-db
+    networks:
+      - zabbix_net
+      - soc_detection_network
+
+  zabbix-agent2:
+    image: zabbix/zabbix-agent2:alpine-latest
+    container_name: zabbix-agent2
+    restart: unless-stopped
+    user: "0"
+    environment:
+      ZBX_HOSTNAME: Docker-Host
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SERVER_ACTIVE: zabbix-server
+      ZBX_DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zabbix-server
+    networks:
+      - zabbix_net
+      - soc_detection_network
+
+volumes:
+  zabbix_db_data:
+
+networks:
+  zabbix_net:
+    external: true
+  soc_detection_network:
+    external: true  

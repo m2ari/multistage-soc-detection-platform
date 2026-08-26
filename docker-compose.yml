@@ -1,0 +1,86 @@
+services:
+  attack-simulator:
+    build:
+      context: ./attack-simulator
+    container_name: soc-attack-simulator
+    ports:
+      - "5005:5000"
+    restart: unless-stopped
+    networks:
+      - soc_detection_network
+    depends_on:
+      - target-system
+
+  target-system:
+    build:
+      context: ./target-system
+    container_name: soc-target-system
+    ports:
+      - "5001:5000"
+    restart: unless-stopped
+    networks:
+      - soc_detection_network
+
+  detection-engine:
+    build:
+      context: ./detection-engine
+    container_name: soc-detection-engine
+    ports:
+      - "5002:5000"
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_NAME: soc_platform
+      DB_USER: soc_user
+      DB_PASSWORD: soc_secure_password
+      DB_PORT: 5432
+    networks:
+      - soc_detection_network
+    depends_on:
+      - postgres
+
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: soc-dashboard
+    ports:
+      - "5003:5000"
+    restart: unless-stopped
+    networks:
+      - soc_detection_network
+    depends_on:
+      - detection-engine
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: soc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: soc_platform
+      POSTGRES_USER: soc_user
+      POSTGRES_PASSWORD: soc_secure_password
+    volumes:
+      - soc_postgres_data:/var/lib/postgresql/data
+    networks:
+      - soc_detection_network
+
+  target-website:
+    build:
+      context: ./target-website
+    container_name: target-website
+    ports:
+      - "5004:5000"
+    restart: unless-stopped
+    environment:
+      DETECTION_ENGINE_URL: http://detection-engine:5000/events
+    networks:
+      - soc_detection_network
+    depends_on:
+      - detection-engine
+
+volumes:
+  soc_postgres_data:
+
+networks:
+  soc_detection_network:
+    external: true
